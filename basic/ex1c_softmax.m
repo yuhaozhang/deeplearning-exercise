@@ -1,6 +1,7 @@
 addpath ../common
 addpath ../common/minFunc_2012/minFunc
 addpath ../common/minFunc_2012/minFunc/compiled
+addpath ../data
 
 % Load the MNIST data for this exercise.
 % train.X and test.X will contain the training and testing images.
