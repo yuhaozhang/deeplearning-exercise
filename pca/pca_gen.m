@@ -6,11 +6,11 @@
 %  You do not need to change the code below.
 
 addpath(genpath('../common'))
-x = loadMNISTImages('../data/train-images-idx3-ubyte');
+x = loadMNISTImages('../data/t10k-images-idx3-ubyte');
+% x = x(:,1:10000); % take the first 10000 examples in x for speeding up
 figure('name','Raw images');
 randsel = randi(size(x,2),200,1); % A random selection of samples for visualization
 display_network(x(:,randsel));
-
 %%================================================================
 %% Step 0b: Zero-mean the data (by row)
 %  You can make use of the mean and repmat/bsxfun functions.
@@ -18,7 +18,7 @@ display_network(x(:,randsel));
 %%% YOUR CODE HERE %%%
 x_mean = mean(x, 1);
 x = bsxfun(@minus, x, x_mean);
-
+disp('zero-mean finished');
 %%================================================================
 %% Step 1a: Implement PCA to obtain xRot
 %  Implement PCA to obtain xRot, the matrix in which the data is expressed
@@ -27,7 +27,7 @@ x = bsxfun(@minus, x, x_mean);
 %%% YOUR CODE HERE %%%
 [U,S,V] = svd(x);
 xRot = U' * x;
-
+disp('PCA finished');
 %%================================================================
 %% Step 1b: Check your implementation of PCA
 %  The covariance matrix for the data expressed with respect to the basis U
@@ -38,12 +38,12 @@ xRot = U' * x;
 %  diagonal (non-zero entries) against a blue background (zero entries).
 
 %%% YOUR CODE HERE %%%
-covar = xRot * xRot';
+covar = xRot * xRot' / size(xRot, 2);
 % Visualise the covariance matrix. You should see a line across the
 % diagonal against a blue background.
 figure('name','Visualisation of covariance matrix');
 imagesc(covar);
-return;
+% return;
 %%================================================================
 %% Step 2: Find k, the number of components to retain
 %  Write code to determine k, the number of components to retain in order
@@ -111,7 +111,7 @@ xPCAWhite = diag(1 ./ sqrt(eigen_v + epsilon)) * U' * x;
 %  becoming smaller.
 
 %%% YOUR CODE HERE %%%
-covar = xPCAWhite * xPCAWhite';
+covar = xPCAWhite * xPCAWhite' / size(xPCAWhite, 2);
 
 % Visualise the covariance matrix. You should see a red line across the
 % diagonal against a blue background.
