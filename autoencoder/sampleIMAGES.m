@@ -24,14 +24,16 @@ patches = zeros(patchsize*patchsize, numpatches);
 %  patch corresponding to the pixels in the block (21,21) to (30,30) of
 %  Image 1
 
-
-
-
-
-
-
-
-
+[numRow, numCol, numImg] = size(IMAGES);
+maxRow = numRow - patchsize;
+maxCol = numCol - patchsize;
+len = patchsize * patchsize;
+for i=1:numpatches
+    rIdx = randi(maxRow);
+    cIdx = randi(maxCol);
+    sample = IMAGES(rIdx:rIdx+patchsize-1, cIdx:cIdx+patchsize-1, randi(numImg));
+    patches(:,i) = reshape(sample, [len, 1]);
+end
 
 %% ---------------------------------------------------------------
 % For the autoencoder to work well we need to normalize the data

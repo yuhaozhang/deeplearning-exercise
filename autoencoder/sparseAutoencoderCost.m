@@ -42,23 +42,33 @@ b2grad = zeros(size(b2));
 % the gradient descent update to W1 would be W1 := W1 - alpha * W1grad, and similarly for W2, b1, b2. 
 % 
 
+% forwardpropagation
+z2 = bsxfun(@plus, W1 * data, b1);
+a2 = sigmoid(z2);
+z3 = bsxfun(@plus, W2 * a2, b2);
+h = sigmoid(z3);
 
+[~, m] = size(data);
+% first term
+cost = sum(sum((h - data).^2)) / m / 2.0; 
+% regularization term
+cost = cost + lambda / 2 * (sum(sum(W1.^2)) + sum(sum(W2.^2)));
+% norm bound term
+p = sum(a2, 2) / m;
+cost = cost + beta * sum(sparsityParam * log(sparsityParam ./ p) + (1-sparsityParam) * log((1- sparsityParam) ./ (1 - p)));
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+% backpropagation
+delta_3 = -(data - h) .* (h .* (1-h));
+norm_bound_grad = beta * (- sparsityParam ./ p + (1 - sparsityParam) ./ (1 - p));
+delta_2 = bsxfun(@plus, W2' * delta_3, norm_bound_grad); % add norm bound term
+delta_2 = delta_2 .* (a2 .* (1-a2));
+W1grad = delta_2 * data' / m;
+b1grad = sum(delta_2, 2) / m; % accumulates for all examples
+W2grad = delta_3 * a2' / m;
+b2grad = sum(delta_3, 2) / m;
+% regularization
+W1grad = W1grad + lambda * W1;
+W2grad = W2grad + lambda * W2;
 
 %-------------------------------------------------------------------
 % After computing the cost and gradient, we will convert the gradients back

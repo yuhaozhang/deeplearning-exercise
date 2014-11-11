@@ -5,3 +5,6 @@
 *.mat
 *.MAT
 data/
+
+# results
+*.jpg

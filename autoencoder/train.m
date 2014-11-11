@@ -61,7 +61,7 @@ theta = initializeParameters(hiddenSize, visibleSize);
 %  and/or lambda to zero may be helpful for debugging.)  However, in your 
 %  final submission of the visualized weights, please use parameters we 
 %  gave in Step 0 above.
-
+% patches = patches(:, 1:10);
 [cost, grad] = sparseAutoencoderCost(theta, visibleSize, hiddenSize, lambda, ...
                                      sparsityParam, beta, patches);
 
@@ -75,25 +75,24 @@ theta = initializeParameters(hiddenSize, visibleSize);
 % First, lets make sure your numerical gradient computation is correct for a
 % simple function.  After you have implemented computeNumericalGradient.m,
 % run the following: 
-checkNumericalGradient();
+% checkNumericalGradient();
 
 % Now we can use it to check your cost function and derivative calculations
 % for the sparse autoencoder.  
-numgrad = computeNumericalGradient( @(x) sparseAutoencoderCost(x, visibleSize, ...
-                                                  hiddenSize, lambda, ...
-                                                  sparsityParam, beta, ...
-                                                  patches), theta);
+% numgrad = computeNumericalGradient( @(x) sparseAutoencoderCost(x, visibleSize, ...
+%                                                   hiddenSize, lambda, ...
+%                                                   sparsityParam, beta, ...
+%                                                   patches), theta);
 
 % Use this to visually compare the gradients side by side
-disp([numgrad grad]); 
+% disp([numgrad grad]); 
 
 % Compare numerically computed gradients with the ones obtained from backpropagation
-diff = norm(numgrad-grad)/norm(numgrad+grad);
-disp(diff); % Should be small. In our implementation, these values are
+% diff = norm(numgrad-grad)/norm(numgrad+grad);
+% disp(diff); % Should be small. In our implementation, these values are
             % usually less than 1e-9.
 
             % When you got this working, Congratulations!!! 
-
 %%======================================================================
 %% STEP 4: After verifying that your implementation of
 %  sparseAutoencoderCost is correct, You can start training your sparse
@@ -103,7 +102,9 @@ disp(diff); % Should be small. In our implementation, these values are
 theta = initializeParameters(hiddenSize, visibleSize);
 
 %  Use minFunc to minimize the function
-addpath minFunc/
+% addpath minFunc/
+addpath ../common/minFunc_2012/minFunc
+addpath ../common/minFunc_2012/minFunc/compiled
 options.Method = 'lbfgs'; % Here, we use L-BFGS to optimize our cost
                           % function. Generally, for minFunc to work, you
                           % need a function pointer with two outputs: the
