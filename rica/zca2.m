@@ -8,3 +8,10 @@ epsilon = 1e-4;
 % z is the ZCA transformed data. The dimenison of z = x.
 
 %%% YOUR CODE HERE %%%
+EPSILON = 0.1;
+x_mean = mean(x, 1);
+x = bsxfun(@minus, x, x_mean);
+sigma = x * x' / size(x,2);
+[U, S, ~] = svd(sigma);
+xPCAWhite = diag(1 ./ sqrt(diag(S) + EPSILON)) * U' * x;
+Z = U * xPCAWhite;

@@ -25,7 +25,8 @@ disp('zero-mean finished');
 %  with respect to the eigenbasis of sigma, which is the matrix U.
 
 %%% YOUR CODE HERE %%%
-[U,S,V] = svd(x);
+sigma = x * x' / size(x,2);
+[U,S,V] = svd(sigma);
 xRot = U' * x;
 disp('PCA finished');
 %%================================================================
