@@ -53,14 +53,14 @@ h = sigmoid(z3);
 cost = sum(sum((h - data).^2)) / m / 2.0; 
 % regularization term
 cost = cost + lambda / 2 * (sum(sum(W1.^2)) + sum(sum(W2.^2)));
-% norm bound term
+% sparsity constraint term
 p = sum(a2, 2) / m;
 cost = cost + beta * sum(sparsityParam * log(sparsityParam ./ p) + (1-sparsityParam) * log((1- sparsityParam) ./ (1 - p)));
 
 % backpropagation
 delta_3 = -(data - h) .* (h .* (1-h));
 norm_bound_grad = beta * (- sparsityParam ./ p + (1 - sparsityParam) ./ (1 - p));
-delta_2 = bsxfun(@plus, W2' * delta_3, norm_bound_grad); % add norm bound term
+delta_2 = bsxfun(@plus, W2' * delta_3, norm_bound_grad); % add sparsity constraint
 delta_2 = delta_2 .* (a2 .* (1-a2));
 W1grad = delta_2 * data' / m;
 b1grad = sum(delta_2, 2) / m; % accumulates for all examples
