@@ -72,6 +72,8 @@ activations = zeros(convDim,convDim,numFilters,numImages);
 activationsPooled = zeros(outputDim,outputDim,numFilters,numImages);
 
 %%% YOUR CODE HERE %%%
+activitions = cnnConvolve(filterDim, numFilters, images, Wc, bc);
+activationsPooled = cnnPool(poolDim, activitions);
 
 % Reshape activations into 2-d matrix, hiddenSize x numImages,
 % for Softmax layer
@@ -88,6 +90,9 @@ activationsPooled = reshape(activationsPooled,[],numImages);
 probs = zeros(numClasses,numImages);
 
 %%% YOUR CODE HERE %%%
+exp_term = exp(Wd * activationsPooled + repmat(bd, 1, 10)); % expand bd from 10 x 1 to 10 x 10
+sum_exp = sum(exp_term, 1);
+probs = bsxfun(@rdivide, exp_term, sum_exp);
 
 %%======================================================================
 %% STEP 1b: Calculate Cost
@@ -98,6 +103,8 @@ probs = zeros(numClasses,numImages);
 cost = 0; % save objective into cost
 
 %%% YOUR CODE HERE %%%
+I = sub2ind(size(probs), labels', 1:size(probs,2));
+cost = -sum(log(probs(I)));
 
 % Makes predictions given probs and returns without backproagating errors.
 if pred
@@ -118,6 +125,44 @@ end;
 %  quickly.
 
 %%% YOUR CODE HERE %%%
+
+% Error formula: delta^(4)_i = - \sum_j{I(y == j) * (I(i==j) - a^(4)_i)}
+class = (1:numClasses)';
+% this label_mask_mat will have one 1 in each column, and the 1 appears in
+% the label-th row
+label_mask_mat = bsxfun(@eq, labels', repmat(class, 1, numImages));
+% check whether these two matrices have equal size
+assert(isequal(size(probs), size(label_mask_mat)));
+% delta_4 is delta_d, which is the error of the softmax layer
+delta_4 = - label_mask_mat .* (1 - probs);
+% this is the reverse of label_mast_mat
+label_mask_mat_reverse = ones(size(label_mask_mat)) - label_mask_mat;
+delta_4 = delta_4 - label_mask_mat_reverse .* (-probs);
+
+% delta_3 is the error of the hidden layer before the softmax, f(z) = z for
+% this layer
+delta_3 = Wd' * delta_4;
+assert(isequal(size(delta_3), [outputDim * outputDim * numFilters, numImages]));
+% backpropagate error through the pooling layer and compute gradients
+for imageNum=1:numImages
+    % reshape to a square shape: outputDim x outputDim x numFilters
+    delta_source = reshape(delta_3(:, imageNum), [outputDim, outputDim, numFilters]);
+    im = squeeze(images(:,:,imageNum));
+    for filterNum=1:numFilters
+        % delta_pool shape: convDim * convDim
+        delta_pool = 1/(poolDim^2) * kron(delta_source(:,:,filterNum), ones(poolDim));
+        delta_rot = rot90(delta_pool,2);
+        Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + conv2(im, delta_rot, 'valid');
+        bc_grad(filterNum) = bc_grad(filterNum) + sum(sum(delta_pool));
+    end
+end
+
+% Wc_grad = Wc_grad / numImages;
+% bc_grad = bc_grad / numImages;
+
+% vectorized for Wd gradients
+Wd_grad = delta_4 * activationsPooled';
+bd_grad = sum(delta_4, 2);
 
 %%======================================================================
 %% STEP 1d: Gradient Calculation
