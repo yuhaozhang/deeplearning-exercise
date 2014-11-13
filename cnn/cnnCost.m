@@ -72,8 +72,8 @@ activations = zeros(convDim,convDim,numFilters,numImages);
 activationsPooled = zeros(outputDim,outputDim,numFilters,numImages);
 
 %%% YOUR CODE HERE %%%
-activitions = cnnConvolve(filterDim, numFilters, images, Wc, bc);
-activationsPooled = cnnPool(poolDim, activitions);
+activations = cnnConvolve(filterDim, numFilters, images, Wc, bc);
+activationsPooled = cnnPool(poolDim, activations);
 
 % Reshape activations into 2-d matrix, hiddenSize x numImages,
 % for Softmax layer
@@ -151,6 +151,9 @@ for imageNum=1:numImages
     for filterNum=1:numFilters
         % delta_pool shape: convDim * convDim
         delta_pool = 1/(poolDim^2) * kron(delta_source(:,:,filterNum), ones(poolDim));
+        % don't forget to multiply the f'(z) term, since this layer has a
+        % sigmoid activition function
+        delta_pool = delta_pool .* activations(:, :, filterNum, imageNum) .* (1 - activations(:, :, filterNum, imageNum));
         delta_rot = rot90(delta_pool,2);
         Wc_grad(:,:,filterNum) = Wc_grad(:,:,filterNum) + conv2(im, delta_rot, 'valid');
         bc_grad(filterNum) = bc_grad(filterNum) + sum(sum(delta_pool));
