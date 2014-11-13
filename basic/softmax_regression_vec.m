@@ -32,7 +32,7 @@ function [f,g] = softmax_regression(theta, X,y)
   sum_exp = sum(exp_m, 1); % 1 x m
   P = bsxfun(@rdivide, exp_m, sum_exp); % 10 x m probability matrix
   I = sub2ind(size(P), y, 1:size(P,2));
-  f = -sum(P(I));
+  f = -sum(log(P(I)));
   
   class = (1:num_classes)';
   diff = bsxfun(@eq, y, repmat(class, 1, m)) - P; % I(y_i = k) - P(y_i = k | x_i; theta) : matrix
