@@ -12,7 +12,7 @@
 %  STEP 0: Here we provide the relevant parameters values that will
 %  allow your RICA to get good filters; you do not need to 
 %  change the parameters below.
-addpath(genpath('..'))
+addpath(genpath('../common/'))
 imgSize = 28;
 global params;
 params.patchWidth=9;           % width of a patch
@@ -29,8 +29,8 @@ params.epsilon = 1e-2;
 %  change it.
 
 % Load MNIST database files
-mnistData   = loadMNISTImages('../common/train-images-idx3-ubyte');
-mnistLabels = loadMNISTLabels('../common/train-labels-idx1-ubyte');
+mnistData   = loadMNISTImages('../data/train-images-idx3-ubyte');
+mnistLabels = loadMNISTLabels('../data/train-labels-idx1-ubyte');
 
 numExamples = size(mnistData, 2);
 % 50000 of the data are pretended to be unlabelled
@@ -38,8 +38,6 @@ unlabeledSet = 1:50000;
 unlabeledData = mnistData(:, unlabeledSet);
 
 % the rest are equally splitted into labelled train and test data
-
-
 trainSet = 50001:55000;
 testSet = 55001:60000;
 trainData   = mnistData(:, trainSet);
@@ -78,22 +76,23 @@ patches = samplePatches([unlabeledData,trainData],params.patchWidth,200000);
 %configure minFunc
 options.Method = 'lbfgs';
 options.MaxFunEvals = Inf;
-options.MaxIter = 1000;
+options.MaxIter = 500;
 % You'll need to replace this line with RICA training code
-opttheta = randTheta;
+% opttheta = randTheta;
 
 %  Find opttheta by running the RICA on all the training patches.
 %  You will need to whitened the patches with the zca2 function 
 %  then call minFunc with the softICACost function as seen in the RICA exercise.
 %%% YOUR CODE HERE %%%
+[patches_whitened, V] = zca2(patches);
+[opttheta, cost, ~] = minFunc( @(theta) softICACost(theta, patches_whitened, params), randTheta, options); % Use x or xw
 
 % reshape visualize weights
 W = reshape(opttheta, params.numFeatures, params.n);
 display_network(W');
 
 %% ======================================================================
-
-%% STEP 3: Extract Features from the Supervised Dataset
+% STEP 3: Extract Features from the Supervised Dataset
 % pre-multiply the weights with whitening matrix, equivalent to whitening
 % each image patch before applying convolution. V should be the same V
 % returned by the zca2 when you whiten the patches.
@@ -116,8 +115,9 @@ testAct = feedfowardRICA(filterDim, poolDim, numFilters, testImages, W);
 featureSize = size(trainAct,1)*size(trainAct,2)*size(trainAct,3);
 trainFeatures = reshape(trainAct, featureSize, size(trainData, 2));
 testFeatures = reshape(testAct, featureSize, size(testData, 2));
+
 %% ======================================================================
-%% STEP 4: Train the softmax classifier
+% STEP 4: Train the softmax classifier
 
 numClasses  = 5; % doing 5-class digit recognition
 % initialize softmax weights randomly
@@ -134,13 +134,16 @@ options.MaxIter = 300;
 
 % optimize
 %%% YOUR CODE HERE %%%
-
-
-%%======================================================================
-%% STEP 5: Testing 
+opttheta2 = minFunc(@softmax_regression_vec, randTheta2, options, trainFeatures, trainLabels);
+opttheta2 = reshape(opttheta2, [], numClasses);
+%% ======================================================================
+% STEP 5: Testing 
 % Compute Predictions on tran and test sets using softmaxPredict
 % and softmaxModel
 %%% YOUR CODE HERE %%%
+[~,train_pred] = max(opttheta2'*trainFeatures, [], 1);
+[~,pred] = max(opttheta2'*testFeatures, [], 1);
+
 % Classification Score
 fprintf('Train Accuracy: %f%%\n', 100*mean(train_pred(:) == trainLabels(:)));
 fprintf('Test Accuracy: %f%%\n', 100*mean(pred(:) == testLabels(:)));
