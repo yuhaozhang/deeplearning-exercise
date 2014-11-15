@@ -33,9 +33,14 @@ beta = 3;              % weight of sparsity penalty term
 %
 %  This loads our training data from the MNIST database files.
 
+addpath(genpath('../common/'))
 % Load MNIST database files
-trainData = loadMNISTImages('mnist/train-images-idx3-ubyte');
-trainLabels = loadMNISTLabels('mnist/train-labels-idx1-ubyte');
+trainData = loadMNISTImages('../data/train-images-idx3-ubyte');
+trainLabels = loadMNISTLabels('../data/train-labels-idx1-ubyte');
+
+% for debugging
+trainData = trainData(:, 1:5000);
+trainLabels = trainLabels(1:5000);
 
 trainLabels(trainLabels == 0) = 10; % Remap 0 to 10 since our labels need to start from 1
 
@@ -55,24 +60,26 @@ sae1Theta = initializeParameters(hiddenSizeL1, inputSize);
 %                an hidden size of "hiddenSizeL1"
 %                You should store the optimal parameters in sae1OptTheta
 
+%  Use minFunc to minimize the function
+% addpath minFunc/
+addpath ../common/minFunc_2012/minFunc
+addpath ../common/minFunc_2012/minFunc/compiled
+options.Method = 'lbfgs'; % Here, we use L-BFGS to optimize our cost
+                          % function. Generally, for minFunc to work, you
+                          % need a function pointer with two outputs: the
+                          % function value and the gradient. In our problem,
+                          % sparseAutoencoderCost.m satisfies this.
+% options.maxIter = 400;	  % Maximum number of iterations of L-BFGS to run 
+options.maxIter = 50; % for debug
+options.display = 'on';
 
-
-
-
-
-
-
-
-
-
-
-
-
+[sae1OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
+                                   inputSize, hiddenSizeL1, ...
+                                   lambda, sparsityParam, ...
+                                   beta, trainData), ...
+                              sae1Theta, options);
 
 % -------------------------------------------------------------------------
-
-
-
 %%======================================================================
 %% STEP 2: Train the second sparse autoencoder
 %  This trains the second sparse autoencoder on the first autoencoder
@@ -93,17 +100,11 @@ sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
 %
 %                You should store the optimal parameters in sae2OptTheta
 
-
-
-
-
-
-
-
-
-
-
-
+[sae2OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
+                                   hiddenSizeL1, hiddenSizeL2, ...
+                                   lambda, sparsityParam, ...
+                                   beta, sae1Features), ...
+                              sae2Theta, options);
 
 % -------------------------------------------------------------------------
 
@@ -131,20 +132,9 @@ saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
 %  NOTE: If you used softmaxTrain to complete this part of the exercise,
 %        set saeSoftmaxOptTheta = softmaxModel.optTheta(:);
 
-
-
-
-
-
-
-
-
-
-
+saeSoftmaxOptTheta(:)=minFunc(@softmax_regression_vec, saeSoftmaxTheta(:), options, trainData, trainLabels)
+return;
 % -------------------------------------------------------------------------
-
-
-
 %%======================================================================
 %% STEP 5: Finetune softmax model
 
