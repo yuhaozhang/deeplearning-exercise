@@ -24,15 +24,25 @@ stack = params2stack(theta(hiddenSize*numClasses+1:end), netconfig);
 %  Instructions: Compute pred using theta assuming that the labels start 
 %                from 1.
 
+stackNum = numel(stack);
+activation = cell(size(stack));
 
+%% forward propagate
+input = data;
+% stacked layers output
+for d=1:stackNum
+    activation{d}.z = bsxfun(@plus, stack{d}.w * input, stack{d}.b);
+    activation{d}.a = sigmoid(activation{d}.z);
+    input = activation{d}.a;
+end
+% softmax layer output
+z_softmax = softmaxTheta * activation{stackNum}.a;
+exp_term = exp(z_softmax);
+sum_exp = sum(exp_term, 1);
+probs = bsxfun(@rdivide, exp_term, sum_exp);
 
-
-
-
-
-
-
-
+[~,pred] = max(probs,[],1);
+pred = pred';
 
 % -----------------------------------------------------------
 

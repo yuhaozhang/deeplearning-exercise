@@ -28,6 +28,14 @@ sparsityParam = 0.1;   % desired average activation of the hidden units.
 lambda = 3e-3;         % weight decay parameter       
 beta = 3;              % weight of sparsity penalty term       
 
+% iteration numbers: better control
+autoencoderMaxIter = 200;
+softmaxMaxIter = 400;
+stackMaxIter = 200;
+
+exampleNum = 500;
+testNum = 200;
+
 %%======================================================================
 %% STEP 1: Load data from the MNIST database
 %
@@ -37,10 +45,9 @@ addpath(genpath('../common/'))
 % Load MNIST database files
 trainData = loadMNISTImages('../data/train-images-idx3-ubyte');
 trainLabels = loadMNISTLabels('../data/train-labels-idx1-ubyte');
-
 % for debugging
-trainData = trainData(:, 1:5000);
-trainLabels = trainLabels(1:5000);
+trainData = trainData(:, 1:exampleNum);
+trainLabels = trainLabels(1:exampleNum);
 
 trainLabels(trainLabels == 0) = 10; % Remap 0 to 10 since our labels need to start from 1
 
@@ -69,8 +76,7 @@ options.Method = 'lbfgs'; % Here, we use L-BFGS to optimize our cost
                           % need a function pointer with two outputs: the
                           % function value and the gradient. In our problem,
                           % sparseAutoencoderCost.m satisfies this.
-% options.maxIter = 400;	  % Maximum number of iterations of L-BFGS to run 
-options.maxIter = 50; % for debug
+options.maxIter = autoencoderMaxIter;	  % Maximum number of iterations of L-BFGS to run 
 options.display = 'on';
 
 [sae1OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
@@ -107,8 +113,6 @@ sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
                               sae2Theta, options);
 
 % -------------------------------------------------------------------------
-
-
 %%======================================================================
 %% STEP 3: Train the softmax classifier
 %  This trains the sparse autoencoder on the second autoencoder features.
@@ -119,7 +123,8 @@ sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
                                         hiddenSizeL1, sae1Features);
 
 %  Randomly initialize the parameters
-saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
+% assume the paramters for the 10-th class is all-zero, do not train it.
+saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * (numClasses - 1), 1);
 
 
 %% ---------------------- YOUR CODE HERE  ---------------------------------
@@ -132,8 +137,12 @@ saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
 %  NOTE: If you used softmaxTrain to complete this part of the exercise,
 %        set saeSoftmaxOptTheta = softmaxModel.optTheta(:);
 
-saeSoftmaxOptTheta(:)=minFunc(@softmax_regression_vec, saeSoftmaxTheta(:), options, trainData, trainLabels)
-return;
+options.maxIter = softmaxMaxIter;
+
+saeSoftmaxOptTheta = minFunc(@(p) softmaxCost(p, sae2Features, trainLabels, lambda), saeSoftmaxTheta(:), options);
+% append the theta for the last class (we assume it to be all-zero)
+saeSoftmaxOptTheta = [saeSoftmaxOptTheta; zeros(hiddenSizeL2, 1)];
+
 % -------------------------------------------------------------------------
 %%======================================================================
 %% STEP 5: Finetune softmax model
@@ -161,25 +170,14 @@ stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
 %
 %
 
+options.maxIter = stackMaxIter;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+[stackedAEOptTheta, cost] = minFunc( @(p) stackedAECost(p, ...
+                                  inputSize, hiddenSizeL2, numClasses, ...
+                                    netconfig, lambda, trainData, trainLabels), ...
+                              stackedAETheta, options);
 
 % -------------------------------------------------------------------------
-
-
 
 %%======================================================================
 %% STEP 6: Test 
@@ -189,8 +187,11 @@ stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
 
 % Get labelled test images
 % Note that we apply the same kind of preprocessing as the training set
-testData = loadMNISTImages('mnist/t10k-images-idx3-ubyte');
-testLabels = loadMNISTLabels('mnist/t10k-labels-idx1-ubyte');
+testData = loadMNISTImages('../data/t10k-images-idx3-ubyte');
+testLabels = loadMNISTLabels('../data/t10k-labels-idx1-ubyte');
+
+testData = testData(:, 1:testNum);
+testLabels = testLabels(1:testNum);
 
 testLabels(testLabels == 0) = 10; % Remap 0 to 10
 

@@ -37,6 +37,6 @@ function [f,g] = softmax_regression(theta, X,y)
   class = (1:num_classes)';
   diff = bsxfun(@eq, y, repmat(class, 1, m)) - P; % I(y_i = k) - P(y_i = k | x_i; theta) : matrix
   g = - X * diff';
-  g = g(:,1:numClasses-1);
+  g = g(:,1:num_classes-1);
   g=g(:); % make gradient a vector for minFunc
 
