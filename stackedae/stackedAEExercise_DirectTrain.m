@@ -29,12 +29,12 @@ lambda = 3e-3;         % weight decay parameter
 beta = 3;              % weight of sparsity penalty term       
 
 % iteration numbers: better control
-autoencoderMaxIter = 400;
+autoencoderMaxIter = 200;
 softmaxMaxIter = 400;
 stackMaxIter = 200;
 
-exampleNum = 10000;
-testNum = 1000;
+exampleNum = 500;
+testNum = 200;
 
 %%======================================================================
 %% STEP 1: Load data from the MNIST database
@@ -79,11 +79,11 @@ options.Method = 'lbfgs'; % Here, we use L-BFGS to optimize our cost
 options.maxIter = autoencoderMaxIter;	  % Maximum number of iterations of L-BFGS to run 
 options.display = 'on';
 
-[sae1OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
-                                   inputSize, hiddenSizeL1, ...
-                                   lambda, sparsityParam, ...
-                                   beta, trainData), ...
-                              sae1Theta, options);
+% [sae1OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
+%                                    inputSize, hiddenSizeL1, ...
+%                                    lambda, sparsityParam, ...
+%                                    beta, trainData), ...
+%                               sae1Theta, options);
 
 % -------------------------------------------------------------------------
 %%======================================================================
@@ -93,8 +93,8 @@ options.display = 'on';
 %  If you've correctly implemented sparseAutoencoderCost.m, you don't need
 %  to change anything here.
 
-[sae1Features] = feedForwardAutoencoder(sae1OptTheta, hiddenSizeL1, ...
-                                        inputSize, trainData);
+% [sae1Features] = feedForwardAutoencoder(sae1OptTheta, hiddenSizeL1, ...
+%                                         inputSize, trainData);
 
 %  Randomly initialize the parameters
 sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
@@ -106,11 +106,11 @@ sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
 %
 %                You should store the optimal parameters in sae2OptTheta
 
-[sae2OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
-                                   hiddenSizeL1, hiddenSizeL2, ...
-                                   lambda, sparsityParam, ...
-                                   beta, sae1Features), ...
-                              sae2Theta, options);
+% [sae2OptTheta, cost] = minFunc( @(p) sparseAutoencoderCost(p, ...
+%                                    hiddenSizeL1, hiddenSizeL2, ...
+%                                    lambda, sparsityParam, ...
+%                                    beta, sae1Features), ...
+%                               sae2Theta, options);
 
 % -------------------------------------------------------------------------
 %%======================================================================
@@ -119,13 +119,13 @@ sae2Theta = initializeParameters(hiddenSizeL2, hiddenSizeL1);
 %  If you've correctly implemented softmaxCost.m, you don't need
 %  to change anything here.
 
-[sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
-                                        hiddenSizeL1, sae1Features);
+% [sae2Features] = feedForwardAutoencoder(sae2OptTheta, hiddenSizeL2, ...
+%                                         hiddenSizeL1, sae1Features);
 
 %  Randomly initialize the parameters
-% % assume the paramters for the 10-th class is all-zero, do not train it.
-saeSoftmaxTheta = 0.005 * randn(numClasses * hiddenSizeL2, 1);
-
+% assume the paramters for the 10-th class is all-zero, do not train it.
+% saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * (numClasses - 1), 1);
+saeSoftmaxTheta = 0.005 * randn(hiddenSizeL2 * numClasses, 1);
 
 %% ---------------------- YOUR CODE HERE  ---------------------------------
 %  Instructions: Train the softmax classifier, the classifier takes in
@@ -139,7 +139,7 @@ saeSoftmaxTheta = 0.005 * randn(numClasses * hiddenSizeL2, 1);
 
 options.maxIter = softmaxMaxIter;
 
-saeSoftmaxOptTheta = minFunc(@(p) softmaxCost(p, sae2Features, trainLabels, lambda), saeSoftmaxTheta(:), options);
+% saeSoftmaxOptTheta = minFunc(@(p) softmaxCost(p, sae2Features, trainLabels, lambda), saeSoftmaxTheta(:), options);
 % append the theta for the last class (we assume it to be all-zero)
 % saeSoftmaxOptTheta = [saeSoftmaxOptTheta; zeros(hiddenSizeL2, 1)];
 
@@ -152,16 +152,16 @@ saeSoftmaxOptTheta = minFunc(@(p) softmaxCost(p, sae2Features, trainLabels, lamb
 
 % Initialize the stack using the parameters learned
 stack = cell(2,1);
-stack{1}.w = reshape(sae1OptTheta(1:hiddenSizeL1*inputSize), ...
+stack{1}.w = reshape(sae1Theta(1:hiddenSizeL1*inputSize), ...
                      hiddenSizeL1, inputSize);
-stack{1}.b = sae1OptTheta(2*hiddenSizeL1*inputSize+1:2*hiddenSizeL1*inputSize+hiddenSizeL1);
-stack{2}.w = reshape(sae2OptTheta(1:hiddenSizeL2*hiddenSizeL1), ...
+stack{1}.b = sae1Theta(2*hiddenSizeL1*inputSize+1:2*hiddenSizeL1*inputSize+hiddenSizeL1);
+stack{2}.w = reshape(sae2Theta(1:hiddenSizeL2*hiddenSizeL1), ...
                      hiddenSizeL2, hiddenSizeL1);
-stack{2}.b = sae2OptTheta(2*hiddenSizeL2*hiddenSizeL1+1:2*hiddenSizeL2*hiddenSizeL1+hiddenSizeL2);
+stack{2}.b = sae2Theta(2*hiddenSizeL2*hiddenSizeL1+1:2*hiddenSizeL2*hiddenSizeL1+hiddenSizeL2);
 
 % Initialize the parameters for the deep model
 [stackparams, netconfig] = stack2params(stack);
-stackedAETheta = [ saeSoftmaxOptTheta ; stackparams ];
+stackedAETheta = [ saeSoftmaxTheta ; stackparams ];
 
 %% ---------------------- YOUR CODE HERE  ---------------------------------
 %  Instructions: Train the deep network, hidden size here refers to the '
