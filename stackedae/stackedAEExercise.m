@@ -31,9 +31,9 @@ beta = 3;              % weight of sparsity penalty term
 % iteration numbers: better control
 autoencoderMaxIter = 400;
 softmaxMaxIter = 400;
-stackMaxIter = 200;
+stackMaxIter = 400;
 
-exampleNum = 10000;
+exampleNum = 60000;
 testNum = 1000;
 
 %%======================================================================
